@@ -4171,7 +4171,7 @@
       summaryEl.innerHTML = `
         <div>
           <span class="text-[10px] uppercase font-medium text-slate-500 block leading-none">Season Total</span>
-          <span class="text-xs text-slate-400">${hasTotals ? `${totalCorrect}-${totalWrong} across ${trackedCount} slate${trackedCount === 1 ? '' : 's'}` : 'Nothing settled yet'}</span>
+          <span class="text-xs text-slate-400">${hasTotals ? `${totalCorrect} W - ${totalWrong} L across ${trackedCount} slate${trackedCount === 1 ? '' : 's'}` : 'Nothing settled yet'}</span>
         </div>
         <span class="text-lg font-medium ${hasTotals ? overallColors.text : 'text-slate-600'}">${hasTotals ? overallPct + '%' : '—'}</span>
       `;
