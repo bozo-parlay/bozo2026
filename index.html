@@ -98,12 +98,6 @@
       -moz-appearance: textfield;
     }
 
-    .mobile-collapsible { display: none; }
-    .mobile-collapsible.mobile-open { display: flex; }
-    @media (min-width: 1024px) {
-      .mobile-collapsible { display: flex !important; }
-    }
-
     #mobile-tab-nav { display: flex; }
     @media (min-width: 1024px) {
       #mobile-tab-nav { display: none !important; }
@@ -279,7 +273,7 @@
         </button>
       </form>
 
-      <p class="text-center text-xs text-slate-400 font-mono">Version: 3.1</p>
+      <p class="text-center text-xs text-slate-400 font-mono">Version: 3.11</p>
     </div>
   </div>
 
@@ -304,6 +298,60 @@
           <div class="admin-only desktop-only-flex items-center gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800/80 shrink-0">
             <button data-page="parlay" onclick="setDesktopPage('parlay')" class="desktop-page-btn bg-amber-600 text-slate-950 px-4 py-2 rounded-lg text-xs font-medium transition">Parlay Central</button>
             <button data-page="lines" onclick="setDesktopPage('lines')" class="desktop-page-btn bg-slate-900 text-slate-400 hover:text-slate-200 px-4 py-2 rounded-lg text-xs font-medium transition">Lines & Props</button>
+          </div>
+
+          <!-- Admin Tools Menu Area -->
+          <div class="relative shrink-0 admin-only">
+            <button id="admin-menu-btn" onclick="toggleAdminMenu(event)" title="Admin Tools" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-amber-500/30 rounded-xl px-2.5 py-2 text-xs transition text-amber-400">
+              <svg class="icon" viewBox="0 0 24 24"><use href="#icon-gear"/></svg>
+              <span class="hidden sm:inline font-medium">Admin</span>
+              <span class="text-slate-500 text-[10px]"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-chevron-down"/></svg></span>
+            </button>
+
+            <!-- Dropdown Popup -->
+            <div id="admin-menu-dropdown" class="hidden absolute right-0 mt-2 w-64 max-h-[80vh] overflow-y-auto bg-slate-900 border border-amber-500/20 rounded-xl shadow-2xl py-1 z-50 divide-y divide-slate-800/80">
+              <div class="px-3 py-2">
+                <p class="text-[10px] font-medium uppercase tracking-wider text-amber-400">Admin Tools</p>
+              </div>
+              <div class="py-1">
+                <button onclick="insertCustomWeek(); hideAdminMenu();" class="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2 transition font-medium">
+                  <span class="w-4 text-center text-amber-400">+</span> Extra Slate
+                </button>
+              </div>
+              <div id="voting-counts-admin-group" class="hidden py-1">
+                <label id="voting-counts-toggle-container" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-200 font-medium cursor-pointer hover:bg-slate-800 transition">
+                  <input type="checkbox" id="voting-counts-toggle" onchange="setVotingCountsForNext(this.checked)" class="w-3.5 h-3.5 accent-amber-500">
+                  Vote counts for next slate
+                </label>
+              </div>
+              <div class="py-1">
+                <button onclick="openMembersModal(); hideAdminMenu();" class="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2 transition font-medium">
+                  <span><svg class="icon" viewBox="0 0 24 24"><use href="#icon-users"/></svg></span> Members
+                </button>
+                <button onclick="openOddsFloorModal(); hideAdminMenu();" class="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2 transition font-medium">
+                  <span><svg class="icon" viewBox="0 0 24 24"><use href="#icon-ruler"/></svg></span> Odds Floor
+                </button>
+              </div>
+              <div class="py-1">
+                <label id="lines-props-toggle-container" class="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-200 font-medium cursor-pointer hover:bg-slate-800 transition">
+                  <input type="checkbox" id="lines-props-toggle" onchange="setLinesPropsEnabled(this.checked)" class="w-3.5 h-3.5 accent-amber-500">
+                  Lines & Props
+                </label>
+              </div>
+              <div class="py-1">
+                <button onclick="openBackupModal(); hideAdminMenu();" title="Export or restore all data (picks, votes, roster, PINs) - use this before republishing so a new link doesn't start empty." class="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2 transition font-medium">
+                  <span><svg class="icon" viewBox="0 0 24 24"><use href="#icon-floppy-disk"/></svg></span> Backup
+                </button>
+                <button onclick="openRemindStragglersModal(); hideAdminMenu();" title="Email members who haven't submitted a pick yet." class="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 flex items-center gap-2 transition font-medium">
+                  <span><svg class="icon" viewBox="0 0 24 24"><use href="#icon-bolt"/></svg></span> Remind Stragglers
+                </button>
+              </div>
+              <div class="py-1">
+                <button onclick="handleResetSeasonData(); hideAdminMenu();" title="Wipe all picks, votes, and slates back to a blank Week 1-17. Member PINs are kept." class="w-full text-left px-3 py-2 text-xs text-rose-400 hover:bg-rose-500/10 flex items-center gap-2 transition font-medium">
+                  <span><svg class="icon" viewBox="0 0 24 24"><use href="#icon-bomb"/></svg></span> Reset Season
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- User Avatar Menu Area -->
@@ -350,47 +398,6 @@
       <div class="flex items-center gap-2 bg-slate-950/80 p-2 rounded-2xl border border-slate-800/80">
         <div id="week-calendar-bar" class="flex items-center gap-2 overflow-x-auto no-scrollbar desktop-scrollbar scroll-smooth py-1 flex-1">
           <!-- Calendar Week Pills dynamically rendered here -->
-        </div>
-
-        <div class="admin-only flex items-center gap-1.5 pl-2 border-l border-slate-800">
-          <button id="admin-toggle-btn" onclick="toggleAdminControls()" class="lg:hidden bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 px-3 py-2 rounded-xl text-sm font-medium transition"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-gear"/></svg></button>
-        </div>
-      </div>
-
-      <!-- Admin / slate-management panel -->
-      <div id="admin-controls" class="admin-only mobile-collapsible items-center gap-2 flex-wrap w-full lg:w-auto bg-slate-950/60 p-2.5 rounded-xl border border-amber-500/20">
-        <span class="text-[10px] uppercase font-medium tracking-wider text-amber-400 px-1">Admin Tools:</span>
-        <button onclick="insertCustomWeek()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium transition">+ Extra Slate</button>
-
-        <div id="voting-counts-admin-group" class="hidden items-center ml-2 pl-2 border-l border-slate-800">
-          <label id="voting-counts-toggle-container" class="flex items-center gap-1.5 text-xs text-slate-300 font-medium cursor-pointer bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg">
-            <input type="checkbox" id="voting-counts-toggle" onchange="setVotingCountsForNext(this.checked)" class="w-3.5 h-3.5 accent-amber-500">
-            Vote counts for next slate
-          </label>
-        </div>
-
-        <div class="flex items-center ml-2 pl-2 border-l border-slate-800">
-          <button onclick="openMembersModal()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-medium transition"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-users"/></svg> Members</button>
-          <button onclick="openOddsFloorModal()" class="ml-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-medium transition"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-ruler"/></svg> Odds Floor</button>
-        </div>
-
-        <div class="flex items-center ml-2 pl-2 border-l border-slate-800">
-          <label id="lines-props-toggle-container" class="flex items-center gap-1.5 text-xs text-slate-300 font-medium cursor-pointer bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg">
-            <input type="checkbox" id="lines-props-toggle" onchange="setLinesPropsEnabled(this.checked)" class="w-3.5 h-3.5 accent-amber-500">
-            Lines & Props
-          </label>
-        </div>
-
-        <div class="flex items-center ml-2 pl-2 border-l border-slate-800">
-          <button onclick="handleResetSeasonData()" title="Wipe all picks, votes, and slates back to a blank Week 1-12. Member PINs are kept." class="bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800 text-rose-300 px-3 py-1.5 rounded-lg text-xs font-medium transition"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-bomb"/></svg> Reset Season</button>
-        </div>
-
-        <div class="flex items-center ml-2 pl-2 border-l border-slate-800">
-          <button onclick="openBackupModal()" title="Export or restore all data (picks, votes, roster, PINs) - use this before republishing so a new link doesn't start empty." class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-medium transition"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-floppy-disk"/></svg> Backup</button>
-        </div>
-
-        <div class="flex items-center ml-2 pl-2 border-l border-slate-800">
-          <button onclick="openRemindStragglersModal()" title="Email members who haven't submitted a pick yet." class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-medium transition"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-bolt"/></svg> Remind Stragglers</button>
         </div>
       </div>
 
@@ -695,7 +702,7 @@
   <div id="confirm-action-modal" class="fixed inset-0 z-[80] hidden flex items-center justify-center modal-backdrop p-4">
     <div class="bg-slate-900 border border-rose-700/60 w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-4">
       <h3 id="confirm-action-title" class="text-lg font-medium text-rose-400">Confirm Action</h3>
-      <p id="confirm-action-message" class="text-xs text-slate-300 leading-relaxed"></p>
+      <p id="confirm-action-message" class="text-xs text-slate-300 leading-relaxed whitespace-pre-line"></p>
       <div id="confirm-action-text-wrap" class="hidden space-y-1">
         <label id="confirm-action-text-label" class="block text-[10px] font-medium text-slate-400 uppercase tracking-wider">Enter value</label>
         <input type="text" id="confirm-action-text-input" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
@@ -736,9 +743,11 @@
 
   <div id="remind-stragglers-modal" onclick="if (event.target === this) closeRemindStragglersModal();" class="fixed inset-0 z-[75] hidden flex items-center justify-center modal-backdrop p-4">
     <div class="bg-slate-900 border border-amber-500/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
-      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-        <h3 class="text-lg font-medium text-amber-400"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-bolt"/></svg> Remind Stragglers</h3>
-        <button onclick="closeRemindStragglersModal()" class="text-slate-400 hover:text-white font-medium text-lg leading-none"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-xmark"/></svg></button>
+      <div class="border-b border-slate-800 pb-3">
+        <div class="flex justify-between items-center">
+          <h3 class="text-lg font-medium text-amber-400"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-bolt"/></svg> Remind Stragglers</h3>
+          <button onclick="closeRemindStragglersModal()" class="text-slate-400 hover:text-white font-medium text-lg leading-none"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-xmark"/></svg></button>
+        </div>
       </div>
 
       <div class="flex items-center justify-between gap-3">
@@ -771,10 +780,17 @@
 
         <div id="remind-modal-send-fields" class="space-y-3">
           <div>
-            <label class="block text-xs font-medium text-slate-300 mb-1.5">Deadline text (shown in the email)</label>
-            <input type="text" id="remind-modal-deadline-input" class="lock-input" placeholder="Saturday at noon" value="Saturday at noon">
+            <!-- Only slates with at least one missing pick show up here -
+                 nothing to remind anyone about on an already-complete
+                 slate. Earliest active one is checked by default; the
+                 admin can check others too (e.g. several Thanksgiving
+                 slates running at once) and send to all of them in one
+                 go, each with its own deadline text. -->
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Slates to remind</label>
+            <div id="remind-modal-slate-list" class="space-y-2 max-h-56 overflow-y-auto"></div>
+            <p id="remind-modal-deadline-error" class="hidden text-[10px] text-rose-400 mt-1.5">Select at least one slate and enter a deadline for each one you select.</p>
           </div>
-          <button id="remind-modal-send-btn" onclick="handleSendStragglerReminders()" class="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-medium py-2.5 rounded-lg text-sm transition">Send Reminders</button>
+          <button id="remind-modal-send-btn" onclick="handleSendStragglerReminders()" disabled class="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-medium py-2.5 rounded-lg text-sm transition">Send Reminders</button>
         </div>
       </div>
     </div>
@@ -1286,6 +1302,13 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
     // league before it's been verified.
     let remindersTestMode = true;
 
+    // Which slate(s) are checked in the Remind Stragglers dialog right
+    // now, and the deadline text typed in for each one - both reset every
+    // time the dialog is opened (openRemindStragglersModal) rather than
+    // persisted, so a stale deadline from last time can never linger.
+    let remindSelectedSlateIds = new Set();
+    let remindDeadlineBySlateId = {};
+
     let emailjsReady = false;
     function initEmailJs() {
       if (emailjsReady) return true;
@@ -1311,6 +1334,48 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
       const known = missing.filter(name => emailFor(name));
       const unknown = missing.filter(name => !emailFor(name));
       return { missing, known, unknown, emailFor };
+    }
+
+    // Slates worth showing in the Remind Stragglers checklist - anything
+    // with at least one missing pick. A slate everyone's already
+    // submitted on (or that's long since wrapped up) has nobody left to
+    // remind, so it's left off the list entirely rather than shown
+    // unselectable. Order follows the existing slates array, so the
+    // first entry is the earliest one still active.
+    // A slate counts as "deliberately set up" (always remindable
+    // regardless of schedule position) for any of three reasons:
+    // - flagged isExtra (every slate insertCustomWeek creates goes forward)
+    // - created before that flag existed, identifiable by its id carrying
+    //   a millisecond timestamp (slate_<13-digit-number>) rather than the
+    //   small sequential number the original Week 1..N slates use
+    // - renamed away from the plain "Week N" default, e.g. reusing an
+    //   already-scheduled slot as "Thursday Bonus" instead of inserting a
+    //   brand new slate. A rename is just as deliberate a signal as
+    //   inserting a new slate, so it gets the same treatment - otherwise
+    //   it would stay silently gated by position even though an admin
+    //   clearly set it up on purpose.
+    function isExtraSlate(slate) {
+      return Boolean(slate.isExtra)
+        || /^slate_\d{10,}$/.test(slate.id)
+        || !/^Week \d+$/.test(slate.name);
+    }
+
+    function getActiveReminderSlates() {
+      const selectedIndex = slates.findIndex(s => s.id === selectedSlateId);
+      return slates.filter((s, i) => {
+        if (computeStragglers(s).missing.length === 0) return false;
+        // An intentionally-added slate (e.g. a Thanksgiving window) is
+        // always eligible, however far from the currently-selected week
+        // it happens to sit.
+        if (isExtraSlate(s)) return true;
+        // A regular scheduled week only shows up once the admin has
+        // actually navigated to it (or past it) - otherwise, e.g. while
+        // on Week 4, Week 15 would show up as "missing a pick" simply
+        // because the season hasn't reached it yet, which isn't a real
+        // straggler.
+        if (selectedIndex === -1) return true;
+        return i <= selectedIndex;
+      });
     }
 
     async function setRemindersEnabled(checked) {
@@ -1342,7 +1407,16 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
     // here, so the admin bar only needs the one button.
     function openRemindStragglersModal() {
       if (currentUserRole !== 'admin') return;
-      document.getElementById('remind-modal-deadline-input').value = 'Saturday at noon';
+      // Reset every time the dialog opens - earliest NOT-yet-reminded
+      // active slate checked by default, nothing else carried over, so a
+      // stale deadline or an old selection can never linger from a
+      // previous send.
+      const activeSlates = getActiveReminderSlates();
+      const firstRemindable = activeSlates.find(s => !s.remindersSentAt);
+      remindSelectedSlateIds = new Set(firstRemindable ? [firstRemindable.id] : []);
+      remindDeadlineBySlateId = {};
+      const errorEl = document.getElementById('remind-modal-deadline-error');
+      if (errorEl) errorEl.classList.add('hidden');
       renderRemindStragglersModal();
       document.getElementById('remind-stragglers-modal').classList.remove('hidden');
     }
@@ -1351,9 +1425,91 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
       document.getElementById('remind-stragglers-modal').classList.add('hidden');
     }
 
+    function escapeAttr(str) {
+      return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    }
+
+    function formatRelativeTime(ms) {
+      const diffMins = Math.round((Date.now() - ms) / 60000);
+      if (diffMins < 1) return 'just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      const diffHours = Math.round(diffMins / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      return `${Math.round(diffHours / 24)}d ago`;
+    }
+
+    // Toggling a slate's checkbox re-renders the whole list (cheap, and
+    // needed to show/hide that slate's deadline field) - typing into a
+    // deadline field does NOT re-render (see setRemindSlateDeadline),
+    // so the admin never loses focus mid-keystroke.
+    function toggleRemindSlateSelection(slateId, checked) {
+      if (currentUserRole !== 'admin') return;
+      // A slate that's already been reminded doesn't render a checkbox at
+      // all (see renderSlateCheckRow), but guard here too in case this
+      // ever gets called some other way - no re-reminding a slate once
+      // a real send has gone out for it.
+      const slate = slates.find(s => s.id === slateId);
+      if (slate && slate.remindersSentAt) return;
+      if (checked) remindSelectedSlateIds.add(slateId);
+      else remindSelectedSlateIds.delete(slateId);
+      renderRemindStragglersModal();
+    }
+
+    function setRemindSlateDeadline(slateId, value) {
+      remindDeadlineBySlateId[slateId] = value;
+      syncRemindSendButtonEnabled();
+    }
+
+    // One row per active slate: a checkbox plus, only while checked, that
+    // slate's own deadline field - different slates (e.g. three
+    // Thanksgiving windows) routinely need different deadlines, so each
+    // gets its own box rather than one shared field. A slate that's
+    // already had a real reminder sent gets a locked, badge-only row
+    // instead - no checkbox, nothing to click - so the league never gets
+    // double-pinged for the same slate.
+    function renderSlateCheckRow(slate) {
+      const { missing, unknown } = computeStragglers(slate);
+
+      if (slate.remindersSentAt) {
+        return `
+          <div class="border border-slate-800 rounded-lg p-2.5 bg-slate-950/20 flex items-center justify-between gap-2">
+            <span class="text-xs font-medium text-slate-500 truncate">${slate.name}</span>
+            <span class="text-[10px] text-emerald-500 shrink-0 whitespace-nowrap">✅ Reminded ${formatRelativeTime(slate.remindersSentAt)}</span>
+          </div>`;
+      }
+
+      const checked = remindSelectedSlateIds.has(slate.id);
+      let countLabel = `${missing.length} missing`;
+      if (unknown.length > 0) countLabel += `, ${unknown.length} no email`;
+      const deadlineVal = escapeAttr(remindDeadlineBySlateId[slate.id] || '');
+      return `
+        <div class="border border-slate-800 rounded-lg p-2.5 ${checked ? 'bg-slate-800/60' : 'bg-slate-950/40'}">
+          <label class="flex items-center gap-2 cursor-pointer" title="Missing: ${escapeAttr(missing.join(', '))}">
+            <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleRemindSlateSelection('${slate.id}', this.checked)" class="w-3.5 h-3.5 accent-amber-500 shrink-0">
+            <span class="text-xs font-medium text-slate-200 flex-1 truncate">${slate.name}</span>
+            <span class="text-[10px] text-slate-500 shrink-0">${countLabel}</span>
+          </label>
+          ${checked ? `<input type="text" value="${deadlineVal}" placeholder="e.g. Saturday at 8pm" oninput="setRemindSlateDeadline('${slate.id}', this.value)" class="lock-input mt-2 text-xs">` : ''}
+        </div>`;
+    }
+
+    // The Send button is gated on: at least one slate checked, and every
+    // checked slate having its own deadline typed in (checked live via
+    // oninput on each deadline field). sendBtn.dataset.ready is set by
+    // renderRemindStragglersModal to reflect whether there's anything
+    // valid to send at all (feature on, slate(s) exist, etc.).
+    function syncRemindSendButtonEnabled() {
+      const sendBtn = document.getElementById('remind-modal-send-btn');
+      if (!sendBtn) return;
+      if (sendBtn.dataset.ready !== 'true') { sendBtn.disabled = true; return; }
+      const ids = [...remindSelectedSlateIds];
+      const allDeadlinesFilled = ids.length > 0 && ids.every(id => (remindDeadlineBySlateId[id] || '').trim());
+      sendBtn.disabled = !allDeadlinesFilled;
+    }
+
     // Repaints everything inside the dialog from current state - called
-    // on open and whenever either switch changes. Safe to call even
-    // while the dialog is closed (e.g. right after a toggle persists).
+    // on open and whenever either switch (or a slate checkbox) changes.
+    // Safe to call even while the dialog is closed.
     function renderRemindStragglersModal() {
       const enabledToggle = document.getElementById('remind-modal-enabled-toggle');
       if (enabledToggle) enabledToggle.checked = remindersEnabled;
@@ -1375,127 +1531,226 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
       const statusEl = document.getElementById('remind-modal-status-text');
       const sendFields = document.getElementById('remind-modal-send-fields');
       const sendBtn = document.getElementById('remind-modal-send-btn');
-      if (!statusEl || !sendFields || !sendBtn) return;
+      const listEl = document.getElementById('remind-modal-slate-list');
+      if (!statusEl || !sendFields || !sendBtn || !listEl) return;
 
-      const slate = slates.find(s => s.id === selectedSlateId);
-      if (!slate) {
-        statusEl.textContent = 'No slate selected.';
-        sendFields.classList.add('hidden');
-        return;
-      }
+      const activeSlates = getActiveReminderSlates();
 
-      // Test Mode is purely "send me one preview email" - it has nothing
-      // to do with who's actually missing a pick, so it skips the
-      // straggler check entirely (including the "everyone's picked"
-      // case) and always offers exactly one send, as long as the admin
-      // has an email on file to preview with.
+      // Test Mode is purely "send me a preview email" - it has nothing to
+      // do with who's actually missing a pick, so instead of the full
+      // checklist it locks onto a single slate (the earliest active one,
+      // or just the currently-viewed one if nothing's active) to pull a
+      // realistic week name from, and always offers exactly one send.
       if (remindersTestMode) {
         const myEmail = (allMembers.find(m => m.name === currentUser) || {}).email;
         if (!myEmail) {
           statusEl.textContent = `Test Mode is on, but there's no email on file for you (${currentUser}). Add one in Members first, or turn off Test Mode.`;
+          listEl.innerHTML = '';
           sendFields.classList.add('hidden');
+          sendBtn.dataset.ready = 'false';
+          syncRemindSendButtonEnabled();
           return;
         }
-        statusEl.innerHTML = `<strong class="text-amber-300">Test Mode:</strong> sends one preview email to <strong>you</strong> (${myEmail}) using the template, regardless of who has picked for the week.`;
+        const previewSlate = activeSlates[0] || slates.find(s => s.id === selectedSlateId) || slates[0];
+        if (!previewSlate) {
+          statusEl.textContent = 'No slate to preview with.';
+          listEl.innerHTML = '';
+          sendFields.classList.add('hidden');
+          sendBtn.dataset.ready = 'false';
+          syncRemindSendButtonEnabled();
+          return;
+        }
+        remindSelectedSlateIds = new Set([previewSlate.id]);
+        statusEl.innerHTML = `<strong class="text-amber-300">Test Mode:</strong> sends one preview email to <strong>you</strong> (${myEmail}) using the template, regardless of who has picked.`;
+        const deadlineVal = escapeAttr(remindDeadlineBySlateId[previewSlate.id] || '');
+        listEl.innerHTML = `
+          <div class="border border-slate-800 rounded-lg p-2.5 bg-slate-800/60">
+            <p class="text-xs font-medium text-slate-200 truncate">${previewSlate.name}</p>
+            <input type="text" value="${deadlineVal}" placeholder="e.g. Saturday at 8pm" oninput="setRemindSlateDeadline('${previewSlate.id}', this.value)" class="lock-input mt-2 text-xs">
+          </div>`;
         sendFields.classList.remove('hidden');
-        sendBtn.disabled = false;
+        sendBtn.dataset.ready = 'true';
+        syncRemindSendButtonEnabled();
         return;
       }
 
-      const { missing, known, unknown } = computeStragglers(slate);
-
-      if (missing.length === 0) {
-        statusEl.textContent = `Everyone has submitted a pick for ${slate.name}. 🎉`;
+      if (activeSlates.length === 0) {
+        statusEl.textContent = 'Nobody is missing a pick on any slate right now. 🎉';
+        listEl.innerHTML = '';
         sendFields.classList.add('hidden');
+        sendBtn.dataset.ready = 'false';
+        syncRemindSendButtonEnabled();
         return;
       }
 
-      let msg = `Missing picks for ${slate.name}: ${missing.join(', ')}.`;
-      if (unknown.length > 0) msg += ` No email on file for ${unknown.join(', ')} (add one in Members) - they won't be emailed.`;
-      statusEl.textContent = msg;
+      // Drop any selected id that's no longer active, or that picked up a
+      // remindersSentAt in the meantime (e.g. sent from another device),
+      // falling back to the earliest still-remindable slate if that
+      // empties the selection out entirely.
+      const remindableSlates = activeSlates.filter(s => !s.remindersSentAt);
+      remindSelectedSlateIds = new Set([...remindSelectedSlateIds].filter(id => remindableSlates.some(s => s.id === id)));
+      if (remindSelectedSlateIds.size === 0 && remindableSlates.length > 0) {
+        remindSelectedSlateIds.add(remindableSlates[0].id);
+      }
 
-      if (known.length === 0) {
-        sendFields.classList.add('hidden');
+      if (remindableSlates.length === 0) {
+        statusEl.textContent = activeSlates.length === 1
+          ? `The 1 slate still missing picks has already been reminded.`
+          : `All ${activeSlates.length} slates still missing picks have already been reminded.`;
       } else {
-        sendFields.classList.remove('hidden');
-        sendBtn.disabled = false;
+        statusEl.textContent = remindableSlates.length === 1
+          ? `1 slate still needs picks.`
+          : `${remindableSlates.length} slate${remindableSlates.length === 1 ? '' : 's'} still need picks - check off which ones to remind.`;
       }
+      listEl.innerHTML = activeSlates.map(s => renderSlateCheckRow(s)).join('');
+      sendFields.classList.remove('hidden');
+
+      // At least one checked slate needs an emailable recipient for Send
+      // to make sense at all - the per-slate deadline requirement is
+      // handled separately by syncRemindSendButtonEnabled.
+      const anySendable = [...remindSelectedSlateIds].some(id => {
+        const s = activeSlates.find(a => a.id === id);
+        return s && computeStragglers(s).known.length > 0;
+      });
+      sendBtn.dataset.ready = anySendable ? 'true' : 'false';
+      syncRemindSendButtonEnabled();
     }
 
     async function handleSendStragglerReminders() {
       if (currentUserRole !== 'admin') return;
-      const slate = slates.find(s => s.id === selectedSlateId);
-      if (!slate) return;
 
-      const deadlineText = document.getElementById('remind-modal-deadline-input').value.trim() || 'Saturday at noon';
-      const sendBtn = document.getElementById('remind-modal-send-btn');
-      if (sendBtn) sendBtn.disabled = true;
+      // Build one entry per checked slate (or the single locked-in preview
+      // slate in Test Mode) - this is what actually gets sent.
+      const entries = [];
+      for (const slateId of remindSelectedSlateIds) {
+        const slate = slates.find(s => s.id === slateId);
+        if (!slate) continue;
+        // Defensive - already-reminded slates don't render a checkbox to
+        // select them, so this shouldn't be reachable in real/non-test
+        // sends.
+        if (!remindersTestMode && slate.remindersSentAt) continue;
+        const deadlineText = (remindDeadlineBySlateId[slateId] || '').trim();
+        if (!deadlineText) continue;
 
-      // Test Mode: exactly one preview email to the admin, independent of
-      // actual picks. Otherwise: the real straggler list.
-      let recipients;
-      if (remindersTestMode) {
-        const myEmail = (allMembers.find(m => m.name === currentUser) || {}).email;
-        if (!myEmail) { if (sendBtn) sendBtn.disabled = false; return; }
-        recipients = [{ name: currentUser, email: myEmail }];
-      } else {
-        const { known, emailFor } = computeStragglers(slate);
-        if (known.length === 0) { if (sendBtn) sendBtn.disabled = false; return; }
-        recipients = known.map(name => ({ name, email: emailFor(name) }));
+        let recipients;
+        if (remindersTestMode) {
+          const myEmail = (allMembers.find(m => m.name === currentUser) || {}).email;
+          if (!myEmail) continue;
+          recipients = [{ name: currentUser, email: myEmail }];
+        } else {
+          const { known, emailFor } = computeStragglers(slate);
+          if (known.length === 0) continue;
+          recipients = known.map(name => ({ name, email: emailFor(name) }));
+        }
+        entries.push({ slate, deadlineText, recipients });
       }
 
-      closeRemindStragglersModal();
-      await sendStragglerReminders(slate, recipients, deadlineText);
+      const deadlineErrorEl = document.getElementById('remind-modal-deadline-error');
+      // Defensive only - the Send button is disabled until every checked
+      // slate has a deadline, so this shouldn't be reachable.
+      if (entries.length === 0) {
+        if (deadlineErrorEl) deadlineErrorEl.classList.remove('hidden');
+        return;
+      }
+      if (deadlineErrorEl) deadlineErrorEl.classList.add('hidden');
 
-      if (sendBtn) sendBtn.disabled = false;
+      // One last checkpoint before anything actually goes out - lists
+      // every slate about to be emailed with its own deadline exactly as
+      // typed, since that's the one thing the template never validates.
+      const totalEmails = entries.reduce((sum, e) => sum + e.recipients.length, 0);
+      const lines = entries.map(e =>
+        `• ${e.slate.name} — ${e.recipients.length} ${e.recipients.length === 1 ? 'email' : 'emails'} — deadline: "${e.deadlineText}"`
+      );
+
+      showConfirmModal({
+        title: 'Confirm Reminder',
+        message: `This will send ${totalEmails} email${totalEmails === 1 ? '' : 's'} right now:\n${lines.join('\n')}\n\nDouble-check each deadline before sending.`,
+        onConfirm: async () => {
+          const sendBtn = document.getElementById('remind-modal-send-btn');
+          if (sendBtn) sendBtn.disabled = true;
+          closeRemindStragglersModal();
+          await sendStragglerReminderBatch(entries);
+          if (sendBtn) sendBtn.disabled = false;
+        }
+      });
     }
 
-    async function sendStragglerReminders(slate, recipients, deadlineText) {
+    async function sendStragglerReminderBatch(entries) {
       if (!initEmailJs()) {
         showNotice("EmailJS didn't load - check your connection and try again.", "Couldn't send");
         return;
       }
 
       // Test Mode redirects every send to the admin's own address (already
-      // validated to exist in renderRemindStragglersModal before the send
-      // button is enabled) and tags the week label so it's unmistakable in
-      // the inbox that this isn't a real reminder - everything else about
-      // the send (count, deadline, template) stays identical to a real
-      // run, so the test is representative.
-      let effectiveRecipients = recipients;
-      let effectiveWeekLabel = slate.name;
-      if (remindersTestMode) {
-        const myEmail = (allMembers.find(m => m.name === currentUser) || {}).email;
-        if (!myEmail) {
-          showNotice(`Test Mode is on, but there's no email on file for you (${currentUser}). Add one in Members first.`, "Can't test-send");
-          return;
+      // validated before the send button was enabled) and tags each
+      // slate's week label so it's unmistakable in the inbox that none of
+      // these are real reminders - everything else about the send stays
+      // identical to a real run. Flattened into one job list so a batch
+      // across several slates reports progress and failures as a whole.
+      const jobs = [];
+      entries.forEach(({ slate, deadlineText, recipients }) => {
+        let effectiveRecipients = recipients;
+        let effectiveWeekLabel = slate.name;
+        if (remindersTestMode) {
+          const myEmail = recipients[0] && recipients[0].email;
+          effectiveRecipients = recipients.map(r => ({ name: r.name, email: myEmail }));
+          effectiveWeekLabel = `[TEST] ${slate.name}`;
         }
-        effectiveRecipients = recipients.map(r => ({ name: r.name, email: myEmail }));
-        effectiveWeekLabel = `[TEST] ${slate.name}`;
-      }
+        effectiveRecipients.forEach(r => {
+          jobs.push({
+            slateId: slate.id,
+            slateName: slate.name,
+            recipientName: r.name,
+            promise: emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+              to_name: r.name,
+              to_email: r.email,
+              week_label: effectiveWeekLabel,
+              deadline: deadlineText,
+              app_link: APP_LINK
+            })
+          });
+        });
+      });
 
-      setSyncStatus(`Sending ${effectiveRecipients.length} reminder${effectiveRecipients.length === 1 ? '' : 's'}${remindersTestMode ? ' (test mode)' : ''}...`);
+      const total = jobs.length;
+      const slateCount = entries.length;
+      setSyncStatus(`Sending ${total} reminder${total === 1 ? '' : 's'} across ${slateCount} slate${slateCount === 1 ? '' : 's'}${remindersTestMode ? ' (test mode)' : ''}...`);
 
-      const results = await Promise.allSettled(effectiveRecipients.map(r =>
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-          to_name: r.name,
-          to_email: r.email,
-          week_label: effectiveWeekLabel,
-          deadline: deadlineText,
-          app_link: APP_LINK
-        })
-      ));
+      const results = await Promise.allSettled(jobs.map(j => j.promise));
 
       const failed = [];
-      results.forEach((r, i) => { if (r.status === 'rejected') failed.push(effectiveRecipients[i].name); });
+      const successfulSlateIds = new Set();
+      results.forEach((r, i) => {
+        if (r.status === 'rejected') failed.push(`${jobs[i].recipientName} (${jobs[i].slateName})`);
+        else successfulSlateIds.add(jobs[i].slateId);
+      });
+
+      // Mark each slate that got at least one real reminder out as
+      // reminded, so it drops off the selectable list next time and the
+      // league doesn't get pinged twice for the same slate. Test Mode
+      // sends don't count - they never reach real stragglers.
+      if (!remindersTestMode && successfulSlateIds.size > 0) {
+        const stamp = Date.now();
+        const ids = [...successfulSlateIds];
+        await optimisticMutate(() => {
+          ids.forEach(id => {
+            const s = slates.find(x => x.id === id);
+            if (s) s.remindersSentAt = stamp;
+          });
+          return (freshSlates) => ids.every(id => {
+            const s = freshSlates.find(x => x.id === id);
+            return Boolean(s && s.remindersSentAt === stamp);
+          });
+        });
+      }
 
       if (failed.length === 0) {
         setSyncStatus(remindersTestMode
-          ? `✅ Test-sent ${effectiveRecipients.length} reminder${effectiveRecipients.length === 1 ? '' : 's'} to you.`
-          : `✅ Reminder sent to ${effectiveRecipients.length} straggler${effectiveRecipients.length === 1 ? '' : 's'}.`);
+          ? `✅ Test-sent ${total} reminder${total === 1 ? '' : 's'} to you.`
+          : `✅ Sent ${total} reminder${total === 1 ? '' : 's'} across ${slateCount} slate${slateCount === 1 ? '' : 's'}.`);
       } else {
         console.error('[EmailJS send failures]', results);
-        setSyncStatus(`⚠️ Sent ${effectiveRecipients.length - failed.length}/${effectiveRecipients.length} - failed: ${failed.join(', ')}`, true);
+        setSyncStatus(`⚠️ Sent ${total - failed.length}/${total} - failed: ${failed.join(', ')}`, true);
       }
     }
 
@@ -1715,12 +1970,24 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
         }
 
         if (stuck) {
-          // Only re-render if this took a retry — meaning the data now
-          // differs from what the instant optimistic render already
-          // showed. On the common first-try success, the screen already
-          // reflects this correctly, so a second identical render is pure
-          // wasted DOM work, and that matters a lot on mobile.
-          if (attempt > 0) render();
+          // Always re-render here, even on the common first-try success.
+          // The tempting optimization is to skip this when attempt === 0,
+          // since the instant optimistic render already showed the
+          // change - but that assumes nothing else painted the screen in
+          // between. It can: the background poll and the
+          // visibility-change sync are chained onto the same
+          // mutationChain queue, but only to order FUTURE entries: if one
+          // of them was already mid-flight (its own storageProvider.get
+          // in progress) when this mutation started, it still finishes
+          // and calls its own render() - with data from before this
+          // change was saved - ahead of this reconciliation's completion.
+          // Skipping this render then leaves the screen showing that
+          // stale snapshot, even though storage (and `slates` in memory)
+          // are already correct - e.g. a just-added slate flashing into
+          // the week bar and then disappearing. Always rendering here
+          // costs one extra paint on the common path, which is cheap
+          // compared to that.
+          render();
           return true;
         }
         // Someone else's write landed in between — brief random backoff
@@ -1817,7 +2084,7 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
 
     function defaultSlates() {
       const arr = [];
-      for (let i = 1; i <= 12; i++) {
+      for (let i = 1; i <= 17; i++) {
         arr.push({ id: `slate_${i}`, name: `Week ${i}`, legs: [], votedMembers: [], voteComments: [], published: false, betStake: 20, forcedBozo: null, votingForceOpened: false, votingCountsForNext: true });
       }
       return arr;
@@ -2259,7 +2526,7 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
       if (currentUserRole !== 'admin') return;
       showConfirmModal({
         title: "💣 Reset Season?",
-        message: "This wipes every pick, vote, and slate back to a blank Week 1-12. Member logins/PINs are kept. This cannot be undone.",
+        message: "This wipes every pick, vote, and slate back to a blank Week 1-17. Member logins/PINs are kept. This cannot be undone.",
         requirePin: true,
         onConfirm: async () => {
           await refreshBeforeMutate(); // pull the latest pins first, just in case
@@ -2566,6 +2833,7 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
 
     function toggleUserMenu(e) {
       if (e) e.stopPropagation();
+      hideAdminMenu();
       const menu = document.getElementById('user-menu-dropdown');
       menu.classList.toggle('hidden');
     }
@@ -2575,11 +2843,29 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
       if (menu) menu.classList.add('hidden');
     }
 
+    function toggleAdminMenu(e) {
+      if (e) e.stopPropagation();
+      if (currentUserRole !== 'admin') return;
+      hideUserMenu();
+      const menu = document.getElementById('admin-menu-dropdown');
+      if (menu) menu.classList.toggle('hidden');
+    }
+
+    function hideAdminMenu() {
+      const menu = document.getElementById('admin-menu-dropdown');
+      if (menu) menu.classList.add('hidden');
+    }
+
     function closeUserMenuOnClickOutside(e) {
       const btn = document.getElementById('user-menu-btn');
       const menu = document.getElementById('user-menu-dropdown');
       if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
         menu.classList.add('hidden');
+      }
+      const adminBtn = document.getElementById('admin-menu-btn');
+      const adminMenu = document.getElementById('admin-menu-dropdown');
+      if (adminBtn && adminMenu && !adminBtn.contains(e.target) && !adminMenu.contains(e.target)) {
+        adminMenu.classList.add('hidden');
       }
     }
 
@@ -2591,9 +2877,7 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
           el.classList.remove('hidden');
         } else {
           // Setting this inline with !important beats any stylesheet rule
-          // regardless of source order (unlike the .hidden class alone,
-          // which was losing a specificity tiebreak against .mobile-collapsible's
-          // desktop override) — non-admins can never see this element.
+          // regardless of source order — non-admins can never see this element.
           el.style.setProperty('display', 'none', 'important');
           el.classList.add('hidden');
         }
@@ -2604,6 +2888,7 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
     async function logout() {
       if (syncTimer) clearInterval(syncTimer);
       hideUserMenu();
+      hideAdminMenu();
       currentUser = null;
       currentUserRole = 'standard';
       isEditingPick = false;
@@ -2623,12 +2908,7 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
       updateLockPinFields();
     }
 
-    function toggleAdminControls() {
-      if (currentUserRole !== 'admin') return;
-      document.getElementById('admin-controls').classList.toggle('mobile-open');
-    }
-
-    function setActiveTab(tab) {
+function setActiveTab(tab) {
       activeTab = tab;
       applyTabVisibility();
     }
@@ -2997,7 +3277,12 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
           const newSlateId = `slate_${Date.now()}`;
           await optimisticMutate(() => {
             const currentIndex = slates.findIndex(s => s.id === selectedSlateId);
-            const newSlate = { id: newSlateId, name: customName, legs: [], votedMembers: [], voteComments: [], betStake: 20, forcedBozo: null, votingForceOpened: false, votingCountsForNext: true };
+            // isExtra marks this as a deliberately-created slate (as opposed
+            // to one of the regular pre-scheduled weeks) - used by the
+            // Remind Stragglers checklist so a manually-added slate like a
+            // Thanksgiving window is always remindable regardless of where
+            // it lands in the schedule order.
+            const newSlate = { id: newSlateId, name: customName, legs: [], votedMembers: [], voteComments: [], betStake: 20, forcedBozo: null, votingForceOpened: false, votingCountsForNext: true, isExtra: true };
 
             slates.splice(currentIndex + 1, 0, newSlate);
             selectedSlateId = newSlateId;
