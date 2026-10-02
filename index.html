@@ -279,7 +279,7 @@
         </button>
       </form>
 
-      <p class="text-center text-xs text-slate-400 font-mono">Version: 3.0</p>
+      <p class="text-center text-xs text-slate-400 font-mono">Version: 3.1</p>
     </div>
   </div>
 
@@ -387,6 +387,10 @@
 
         <div class="flex items-center ml-2 pl-2 border-l border-slate-800">
           <button onclick="openBackupModal()" title="Export or restore all data (picks, votes, roster, PINs) - use this before republishing so a new link doesn't start empty." class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-medium transition"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-floppy-disk"/></svg> Backup</button>
+        </div>
+
+        <div class="flex items-center ml-2 pl-2 border-l border-slate-800">
+          <button onclick="openRemindStragglersModal()" title="Email members who haven't submitted a pick yet." class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-medium transition"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-bolt"/></svg> Remind Stragglers</button>
         </div>
       </div>
 
@@ -730,6 +734,52 @@
     </div>
   </div>
 
+  <div id="remind-stragglers-modal" onclick="if (event.target === this) closeRemindStragglersModal();" class="fixed inset-0 z-[75] hidden flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-slate-900 border border-amber-500/40 w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="text-lg font-medium text-amber-400"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-bolt"/></svg> Remind Stragglers</h3>
+        <button onclick="closeRemindStragglersModal()" class="text-slate-400 hover:text-white font-medium text-lg leading-none"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-xmark"/></svg></button>
+      </div>
+
+      <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-slate-200">Reminders enabled</p>
+          <p class="text-[10px] text-slate-500 leading-snug">Turns the whole feature on or off for the league.</p>
+        </div>
+        <label class="relative inline-flex items-center shrink-0 cursor-pointer">
+          <input type="checkbox" id="remind-modal-enabled-toggle" onchange="setRemindersEnabled(this.checked)" class="sr-only peer">
+          <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:bg-emerald-600 transition-colors"></div>
+          <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+        </label>
+      </div>
+
+      <div id="remind-modal-disabled-note" class="hidden text-xs text-slate-500 bg-slate-950/60 border border-slate-800 rounded-lg px-3 py-2.5">Turn reminders on above to send one.</div>
+
+      <div id="remind-modal-body" class="space-y-4">
+        <div class="flex items-center justify-between gap-3 bg-amber-950/30 border border-amber-700/50 rounded-lg px-3 py-2.5">
+          <div class="min-w-0">
+            <p class="text-xs font-medium text-amber-300">Send just to me</p>
+          </div>
+          <label class="relative inline-flex items-center shrink-0 cursor-pointer">
+            <input type="checkbox" id="remind-modal-test-toggle" onchange="setRemindersTestMode(this.checked)" class="sr-only peer">
+            <div class="w-9 h-5 bg-slate-700 rounded-full peer peer-checked:bg-amber-600 transition-colors"></div>
+            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+          </label>
+        </div>
+
+        <p id="remind-modal-status-text" class="text-xs text-slate-300 leading-relaxed"></p>
+
+        <div id="remind-modal-send-fields" class="space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Deadline text (shown in the email)</label>
+            <input type="text" id="remind-modal-deadline-input" class="lock-input" placeholder="Saturday at noon" value="Saturday at noon">
+          </div>
+          <button id="remind-modal-send-btn" onclick="handleSendStragglerReminders()" class="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-medium py-2.5 rounded-lg text-sm transition">Send Reminders</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="week-options-modal" onclick="if (event.target === this) closeWeekOptionsModal();" class="fixed inset-0 z-[75] hidden flex items-center justify-center modal-backdrop p-4">
     <div class="bg-slate-900 border border-amber-500/40 w-full max-w-xs rounded-2xl p-5 shadow-2xl space-y-3">
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -751,7 +801,7 @@
       <div class="flex justify-between items-center border-b border-slate-800 pb-3">
         <div>
           <h3 class="text-lg font-medium text-amber-400"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-users"/></svg> Manage Members</h3>
-          <p class="text-[11px] text-slate-400 mt-0.5">Toggle who's active in the league, rename someone, or reset their PIN.</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">Toggle who's active in the league, rename someone, reset their PIN, or add an email for reminders.</p>
         </div>
         <button onclick="closeMembersModal()" class="text-slate-400 hover:text-white font-medium text-lg leading-none"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-xmark"/></svg></button>
       </div>
@@ -844,6 +894,7 @@
   <!-- Firebase (compat build = plain script tags, no bundler needed) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
   <script>
     // --- Configuration ---
@@ -1148,9 +1199,29 @@
     // Backfills a role on any member missing one (older saved data from
     // before roles existed), and re-asserts Petro's protected status. Call
     // after any assignment to allMembers, before recomputeActiveMembers().
+    // One-time seed so the 11 emails already collected carry over the
+    // first time this version loads, instead of everyone needing to be
+    // re-typed into the Members modal. Only fills in when email is
+    // completely unset (undefined) - once a member's email has been set
+    // (including deliberately cleared to ""), this never touches it again.
+    const SEED_MEMBER_EMAILS = {
+      "Darc": "darcyroland88@gmail.com",
+      "Beni": "bentivegnamike@gmail.com",
+      "Newby": "jeffnewburn@icloud.com",
+      "Brett": "B.beaulieu87@gmail.com",
+      "Petro": "mikepetro19@gmail.com",
+      "Bates": "chabates@gmail.com",
+      "Shayne": "shayne.haylett@gmail.com",
+      "Fabello": "mike.fabello14@gmail.com",
+      "Matt": "Hermiz_06@hotmail.com",
+      "Wade": "wpreston12@gmail.com",
+      "Dustin": "kenny.dustin@gmail.com"
+    };
+
     function sanitizeMembers() {
       allMembers.forEach(m => {
         if (!m.role) m.role = 'standard';
+        if (m.email === undefined) m.email = SEED_MEMBER_EMAILS[m.name] || '';
       });
       const admin = allMembers.find(m => m.name === PERMANENT_ADMIN);
       if (admin) {
@@ -1189,6 +1260,245 @@
       messagingSenderId: "1080142504149",
       appId: "1:1080142504149:web:6e6bd8bcccdd404761425c"
     };
+    // ============================================================
+    // EMAILJS — "Remind Stragglers" reminder emails
+    // ------------------------------------------------------------
+    // Free client-side email sending via emailjs.com. The Public Key
+    // below is meant to be public (same trade-off as the Firebase
+    // config above) — it only authorizes sending through the specific
+    // service/template configured in your EmailJS account, it can't be
+    // used to read or send arbitrary mail from your inbox.
+const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
+    const EMAILJS_SERVICE_ID = "service_mg753rl";
+    const EMAILJS_TEMPLATE_ID = "template_qnukdwt";
+    const APP_LINK = "https://bozo-parlay.github.io/bozo2026/";
+
+    // Whole-feature on/off switch, same pattern as linesPropsEnabled -
+    // persisted in shared storage so it's one setting for the whole
+    // league, not per-browser.
+    let remindersEnabled = true;
+
+    // Safety switch for testing: while on, EVERY reminder email is
+    // redirected to the sending admin's own address (looked up from
+    // their own Members entry) instead of the real straggler, and the
+    // week label gets a "[TEST]" prefix so it's obvious in the inbox.
+    // Defaults ON so a fresh deploy never accidentally emails the whole
+    // league before it's been verified.
+    let remindersTestMode = true;
+
+    let emailjsReady = false;
+    function initEmailJs() {
+      if (emailjsReady) return true;
+      try {
+        if (!window.emailjs) throw new Error('EmailJS SDK did not load.');
+        emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+        emailjsReady = true;
+      } catch (e) {
+        console.error('[EmailJS init]', e);
+      }
+      return emailjsReady;
+    }
+
+    // Who on the given slate hasn't submitted yet, split into those with
+    // an email on file (can actually be reminded) and those without.
+    function computeStragglers(slate) {
+      const pickedNames = new Set(slate.legs.map(l => l.bettor));
+      const missing = LEAGUE_MEMBERS.filter(name => !pickedNames.has(name));
+      const emailFor = (name) => {
+        const m = allMembers.find(m => m.name === name);
+        return m && m.email ? m.email : null;
+      };
+      const known = missing.filter(name => emailFor(name));
+      const unknown = missing.filter(name => !emailFor(name));
+      return { missing, known, unknown, emailFor };
+    }
+
+    async function setRemindersEnabled(checked) {
+      if (currentUserRole !== 'admin') return;
+      const target = checked;
+      await optimisticMutate(() => {
+        remindersEnabled = target;
+        renderRemindStragglersModal();
+        return (freshSlates, freshMembers, freshPins, freshOddsFloor, freshLinesPropsEnabled, freshRemindersEnabled) => {
+          return freshRemindersEnabled === target;
+        };
+      });
+    }
+
+    async function setRemindersTestMode(checked) {
+      if (currentUserRole !== 'admin') return;
+      const target = checked;
+      await optimisticMutate(() => {
+        remindersTestMode = target;
+        renderRemindStragglersModal();
+        return (freshSlates, freshMembers, freshPins, freshOddsFloor, freshLinesPropsEnabled, freshRemindersEnabled, freshRemindersTestMode) => {
+          return freshRemindersTestMode === target;
+        };
+      });
+    }
+
+    // Opens the one Remind Stragglers dialog - the on/off switch, the
+    // test-mode switch, the deadline field, and the send button all live
+    // here, so the admin bar only needs the one button.
+    function openRemindStragglersModal() {
+      if (currentUserRole !== 'admin') return;
+      document.getElementById('remind-modal-deadline-input').value = 'Saturday at noon';
+      renderRemindStragglersModal();
+      document.getElementById('remind-stragglers-modal').classList.remove('hidden');
+    }
+
+    function closeRemindStragglersModal() {
+      document.getElementById('remind-stragglers-modal').classList.add('hidden');
+    }
+
+    // Repaints everything inside the dialog from current state - called
+    // on open and whenever either switch changes. Safe to call even
+    // while the dialog is closed (e.g. right after a toggle persists).
+    function renderRemindStragglersModal() {
+      const enabledToggle = document.getElementById('remind-modal-enabled-toggle');
+      if (enabledToggle) enabledToggle.checked = remindersEnabled;
+      const testToggle = document.getElementById('remind-modal-test-toggle');
+      if (testToggle) testToggle.checked = remindersTestMode;
+
+      const body = document.getElementById('remind-modal-body');
+      const disabledNote = document.getElementById('remind-modal-disabled-note');
+      if (!body || !disabledNote) return;
+
+      if (!remindersEnabled) {
+        body.classList.add('hidden');
+        disabledNote.classList.remove('hidden');
+        return;
+      }
+      body.classList.remove('hidden');
+      disabledNote.classList.add('hidden');
+
+      const statusEl = document.getElementById('remind-modal-status-text');
+      const sendFields = document.getElementById('remind-modal-send-fields');
+      const sendBtn = document.getElementById('remind-modal-send-btn');
+      if (!statusEl || !sendFields || !sendBtn) return;
+
+      const slate = slates.find(s => s.id === selectedSlateId);
+      if (!slate) {
+        statusEl.textContent = 'No slate selected.';
+        sendFields.classList.add('hidden');
+        return;
+      }
+
+      // Test Mode is purely "send me one preview email" - it has nothing
+      // to do with who's actually missing a pick, so it skips the
+      // straggler check entirely (including the "everyone's picked"
+      // case) and always offers exactly one send, as long as the admin
+      // has an email on file to preview with.
+      if (remindersTestMode) {
+        const myEmail = (allMembers.find(m => m.name === currentUser) || {}).email;
+        if (!myEmail) {
+          statusEl.textContent = `Test Mode is on, but there's no email on file for you (${currentUser}). Add one in Members first, or turn off Test Mode.`;
+          sendFields.classList.add('hidden');
+          return;
+        }
+        statusEl.innerHTML = `<strong class="text-amber-300">Test Mode:</strong> sends one preview email to <strong>you</strong> (${myEmail}) using the template, regardless of who has picked for the week.`;
+        sendFields.classList.remove('hidden');
+        sendBtn.disabled = false;
+        return;
+      }
+
+      const { missing, known, unknown } = computeStragglers(slate);
+
+      if (missing.length === 0) {
+        statusEl.textContent = `Everyone has submitted a pick for ${slate.name}. 🎉`;
+        sendFields.classList.add('hidden');
+        return;
+      }
+
+      let msg = `Missing picks for ${slate.name}: ${missing.join(', ')}.`;
+      if (unknown.length > 0) msg += ` No email on file for ${unknown.join(', ')} (add one in Members) - they won't be emailed.`;
+      statusEl.textContent = msg;
+
+      if (known.length === 0) {
+        sendFields.classList.add('hidden');
+      } else {
+        sendFields.classList.remove('hidden');
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function handleSendStragglerReminders() {
+      if (currentUserRole !== 'admin') return;
+      const slate = slates.find(s => s.id === selectedSlateId);
+      if (!slate) return;
+
+      const deadlineText = document.getElementById('remind-modal-deadline-input').value.trim() || 'Saturday at noon';
+      const sendBtn = document.getElementById('remind-modal-send-btn');
+      if (sendBtn) sendBtn.disabled = true;
+
+      // Test Mode: exactly one preview email to the admin, independent of
+      // actual picks. Otherwise: the real straggler list.
+      let recipients;
+      if (remindersTestMode) {
+        const myEmail = (allMembers.find(m => m.name === currentUser) || {}).email;
+        if (!myEmail) { if (sendBtn) sendBtn.disabled = false; return; }
+        recipients = [{ name: currentUser, email: myEmail }];
+      } else {
+        const { known, emailFor } = computeStragglers(slate);
+        if (known.length === 0) { if (sendBtn) sendBtn.disabled = false; return; }
+        recipients = known.map(name => ({ name, email: emailFor(name) }));
+      }
+
+      closeRemindStragglersModal();
+      await sendStragglerReminders(slate, recipients, deadlineText);
+
+      if (sendBtn) sendBtn.disabled = false;
+    }
+
+    async function sendStragglerReminders(slate, recipients, deadlineText) {
+      if (!initEmailJs()) {
+        showNotice("EmailJS didn't load - check your connection and try again.", "Couldn't send");
+        return;
+      }
+
+      // Test Mode redirects every send to the admin's own address (already
+      // validated to exist in renderRemindStragglersModal before the send
+      // button is enabled) and tags the week label so it's unmistakable in
+      // the inbox that this isn't a real reminder - everything else about
+      // the send (count, deadline, template) stays identical to a real
+      // run, so the test is representative.
+      let effectiveRecipients = recipients;
+      let effectiveWeekLabel = slate.name;
+      if (remindersTestMode) {
+        const myEmail = (allMembers.find(m => m.name === currentUser) || {}).email;
+        if (!myEmail) {
+          showNotice(`Test Mode is on, but there's no email on file for you (${currentUser}). Add one in Members first.`, "Can't test-send");
+          return;
+        }
+        effectiveRecipients = recipients.map(r => ({ name: r.name, email: myEmail }));
+        effectiveWeekLabel = `[TEST] ${slate.name}`;
+      }
+
+      setSyncStatus(`Sending ${effectiveRecipients.length} reminder${effectiveRecipients.length === 1 ? '' : 's'}${remindersTestMode ? ' (test mode)' : ''}...`);
+
+      const results = await Promise.allSettled(effectiveRecipients.map(r =>
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          to_name: r.name,
+          to_email: r.email,
+          week_label: effectiveWeekLabel,
+          deadline: deadlineText,
+          app_link: APP_LINK
+        })
+      ));
+
+      const failed = [];
+      results.forEach((r, i) => { if (r.status === 'rejected') failed.push(effectiveRecipients[i].name); });
+
+      if (failed.length === 0) {
+        setSyncStatus(remindersTestMode
+          ? `✅ Test-sent ${effectiveRecipients.length} reminder${effectiveRecipients.length === 1 ? '' : 's'} to you.`
+          : `✅ Reminder sent to ${effectiveRecipients.length} straggler${effectiveRecipients.length === 1 ? '' : 's'}.`);
+      } else {
+        console.error('[EmailJS send failures]', results);
+        setSyncStatus(`⚠️ Sent ${effectiveRecipients.length - failed.length}/${effectiveRecipients.length} - failed: ${failed.join(', ')}`, true);
+      }
+    }
+
     // ============================================================
 
     let fbDb = null;
@@ -1398,7 +1708,7 @@
           const verifyResult = await withTimeout(storageProvider.get(STATE_KEY), 4000);
           if (verifyResult && verifyResult.value) {
             const parsedCheck = JSON.parse(verifyResult.value);
-            stuck = verify(parsedCheck.slates || [], parsedCheck.members || [], parsedCheck.pins || {}, parsedCheck.oddsFloor, parsedCheck.linesPropsEnabled);
+            stuck = verify(parsedCheck.slates || [], parsedCheck.members || [], parsedCheck.pins || {}, parsedCheck.oddsFloor, parsedCheck.linesPropsEnabled, parsedCheck.remindersEnabled, parsedCheck.remindersTestMode);
           }
         } catch (e) {
           stuck = true; // can't verify — accept it rather than loop forever
@@ -1526,6 +1836,8 @@
       oddsWeekLabel = parsed.oddsWeekLabel || DEFAULT_ODDS_WEEK_LABEL;
       oddsFloor = typeof parsed.oddsFloor === 'number' ? parsed.oddsFloor : -375;
       linesPropsEnabled = typeof parsed.linesPropsEnabled === 'boolean' ? parsed.linesPropsEnabled : false;
+      remindersEnabled = typeof parsed.remindersEnabled === 'boolean' ? parsed.remindersEnabled : true;
+      remindersTestMode = typeof parsed.remindersTestMode === 'boolean' ? parsed.remindersTestMode : true;
       sanitizeMembers();
       recomputeActiveMembers();
       // Keep whichever slate the user is currently looking at, as long
@@ -1574,7 +1886,7 @@
       if (saveInFlight) { saveQueued = true; return; }
       saveInFlight = true;
       try {
-        await storageProvider.set(STATE_KEY, JSON.stringify({ slates, selectedSlateId, pins: memberPins, members: allMembers, oddsSnapshot, oddsUpdated, oddsWeekLabel, oddsFloor, linesPropsEnabled }));
+        await storageProvider.set(STATE_KEY, JSON.stringify({ slates, selectedSlateId, pins: memberPins, members: allMembers, oddsSnapshot, oddsUpdated, oddsWeekLabel, oddsFloor, linesPropsEnabled, remindersEnabled, remindersTestMode }));
         setSyncStatus("");
       } catch (e) {
         setSyncStatus("⚠️ Couldn't save — your last change may not be shared yet.", true);
@@ -1771,6 +2083,10 @@
             </div>
             ${isPermanent ? `<span title="Petro is permanently admin" class="text-[10px] font-medium text-amber-400/70 shrink-0 whitespace-nowrap"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-lock"/></svg> Fixed</span>` : ''}
           </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px] uppercase font-medium tracking-wider text-slate-600 shrink-0">Email</span>
+            <input type="email" value="${(member.email || '').replace(/"/g, '&quot;')}" placeholder="Optional - for reminders" onchange="handleUpdateMemberEmail('${safeName}', this.value)" class="flex-1 min-w-0 bg-slate-900 border border-slate-800 focus:border-amber-500 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 placeholder-slate-600 focus:outline-none">
+          </div>
           <div class="flex items-center gap-1.5 pt-2 border-t border-slate-800/80 flex-wrap">
             ${!isPermanent ? `
               <button onclick="handleToggleMemberRole('${safeName}')" title="${isAdminMember ? 'Remove admin' : 'Make admin'}" class="flex-1 min-w-[84px] text-center text-slate-300 hover:text-amber-400 bg-slate-900 hover:bg-slate-800 border border-slate-800 transition text-xs font-medium px-2 py-2 rounded-lg whitespace-nowrap">${isAdminMember ? '<svg class="icon" viewBox="0 0 24 24"><use href="#icon-arrow-down"/></svg> Admin' : '<svg class="icon" viewBox="0 0 24 24"><use href="#icon-arrow-up"/></svg> Standard'}</button>
@@ -1814,6 +2130,21 @@
         return (freshSlates, freshMembers) => {
           const m = (freshMembers || []).find(m => m.name === name);
           return Boolean(m && m.role === targetRole);
+        };
+      });
+    }
+
+    async function handleUpdateMemberEmail(name, value) {
+      if (currentUserRole !== 'admin') return;
+      const email = value.trim();
+      await optimisticMutate(() => {
+        const member = allMembers.find(m => m.name === name);
+        if (!member) return null;
+        member.email = email;
+
+        return (freshSlates, freshMembers) => {
+          const m = (freshMembers || []).find(m => m.name === name);
+          return Boolean(m && (m.email || '') === email);
         };
       });
     }
@@ -1894,7 +2225,7 @@
             return;
           }
           await optimisticMutate(() => {
-            allMembers.push({ name, active: false, role: 'standard' });
+            allMembers.push({ name, active: false, role: 'standard', email: '' });
             recomputeActiveMembers();
             renderMembersList();
 
@@ -1952,7 +2283,7 @@
     async function openBackupModal() {
       if (currentUserRole !== 'admin') return;
       await refreshBeforeMutate(); // export the freshest data, not a stale local copy
-      const snapshot = JSON.stringify({ slates, selectedSlateId, pins: memberPins, members: allMembers, oddsSnapshot, oddsUpdated, oddsWeekLabel, oddsFloor, linesPropsEnabled }, null, 2);
+      const snapshot = JSON.stringify({ slates, selectedSlateId, pins: memberPins, members: allMembers, oddsSnapshot, oddsUpdated, oddsWeekLabel, oddsFloor, linesPropsEnabled, remindersEnabled, remindersTestMode }, null, 2);
       document.getElementById('backup-export-text').value = snapshot;
       document.getElementById('backup-import-text').value = '';
       document.getElementById('backup-import-error').classList.add('hidden');
@@ -2083,6 +2414,8 @@
           if (typeof parsed.oddsWeekLabel === 'string') oddsWeekLabel = parsed.oddsWeekLabel;
           if (typeof parsed.oddsFloor === 'number') oddsFloor = parsed.oddsFloor;
           if (typeof parsed.linesPropsEnabled === 'boolean') linesPropsEnabled = parsed.linesPropsEnabled;
+          if (typeof parsed.remindersEnabled === 'boolean') remindersEnabled = parsed.remindersEnabled;
+          if (typeof parsed.remindersTestMode === 'boolean') remindersTestMode = parsed.remindersTestMode;
           sanitizeMembers();
           recomputeActiveMembers();
           selectedVoteLegId = null;
