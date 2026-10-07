@@ -273,7 +273,7 @@
         </button>
       </form>
 
-      <p class="text-center text-xs text-slate-400 font-mono">Version: 3.11</p>
+      <p class="text-center text-xs text-slate-400 font-mono">Version: 3.12</p>
     </div>
   </div>
 
@@ -2115,13 +2115,27 @@ const EMAILJS_PUBLIC_KEY = "s9r1GyAWkI2q4dfaN";
       if (!stillExists) {
         selectedSlateId = parsed.selectedSlateId || slates[0].id;
       }
+
+      // Catch-up pass: carry forward any slate whose own result was
+      // already determined (vote completed, or the auto single-loss rule
+      // fired) but never got applied to the next slate's Bozo Override —
+      // covers data saved before this feature existed, plus the rare
+      // case a push got skipped by a race. Safe to re-run on every load:
+      // applyResultToNextSlate only ever fills an empty forcedBozo, never
+      // overwrites one, so this converges and stays a no-op once caught up.
+      let appliedCatchUp = false;
+      slates.forEach(s => {
+        if (applyResultToNextSlate(s)) appliedCatchUp = true;
+      });
+      return appliedCatchUp;
     }
 
     async function loadLeagueState() {
       try {
         const result = await storageProvider.get(STATE_KEY);
         if (result && result.value) {
-          applyLoadedState(JSON.parse(result.value));
+          const needsCatchUpSave = applyLoadedState(JSON.parse(result.value));
+          if (needsCatchUpSave) saveLeagueState();
         } else {
           slates = defaultSlates();
           selectedSlateId = slates[0].id;
@@ -3567,6 +3581,28 @@ function setActiveTab(tab) {
       return null; // clean slate (0 losses) or vote still in progress
     }
 
+    // Once this slate's own result is determined (auto single-loss, or a
+    // completed, untied vote), immediately carry it onto the NEXT slate's
+    // Bozo Override — this is what makes a reveal (shown as "Next Week's
+    // Bozo" in the vote results) actually count in standings the moment
+    // it's known, instead of sitting there until someone manually copies
+    // it over. Never overwrites an existing value on the next slate
+    // (whether from an earlier push or a deliberate admin override) —
+    // only ever fills it in the first time a result lands, so this is
+    // safe to call again on every subsequent grade/vote without risk of
+    // clobbering something already there. Returns the next slate's id if
+    // it actually applied something, otherwise false.
+    function applyResultToNextSlate(slate) {
+      const result = getSlateVoteResult(slate);
+      if (!result) return false;
+      const idx = slates.findIndex(s => s.id === slate.id);
+      if (idx === -1) return false;
+      const nextSlate = slates[idx + 1];
+      if (!nextSlate || nextSlate.forcedBozo) return false;
+      nextSlate.forcedBozo = result;
+      return nextSlate.id;
+    }
+
     function getActiveBozoForSlate(slate) {
       if (!slate) return null;
 
@@ -3764,13 +3800,20 @@ function setActiveTab(tab) {
           selectedVoteLegId = null;
         }
 
+        // Grading this leg might be what just made the auto single-loss
+        // rule fire (exactly one Loss, nothing else pending) — if so,
+        // carry that result onto the next slate immediately rather than
+        // waiting for an admin to notice and copy it over by hand.
+        const pushedNextSlateId = applyResultToNextSlate(currentSlate);
+
         return (freshSlates) => {
           const s = freshSlates.find(s => s.id === selectedSlateId);
           if (!s) return false;
           const leg = s.legs.find(l => l.id === id);
           const mineOk = Boolean(leg && leg.status === newStatus);
           const othersOk = otherLegIdsAtMutationTime.every(otherId => s.legs.some(l => l.id === otherId));
-          return mineOk && othersOk;
+          const forwardOk = !pushedNextSlateId || Boolean(freshSlates.find(fs => fs.id === pushedNextSlateId && fs.forcedBozo));
+          return mineOk && othersOk && forwardOk;
         };
       });
     }
@@ -3855,6 +3898,12 @@ function setActiveTab(tab) {
         document.getElementById('vote-comment-input').value = '';
         selectedVoteLegId = null;
 
+        // This might be the last vote needed to settle a tie-free result
+        // — if so, carry it onto the next slate immediately so the
+        // "Next Week's Bozo" reveal actually lands in standings right
+        // away, instead of needing a manual Bozo Override afterward.
+        const pushedNextSlateId = applyResultToNextSlate(currentSlate);
+
         return (freshSlates) => {
           const s = freshSlates.find(s => s.id === selectedSlateId);
           if (!s) return false;
@@ -3865,7 +3914,8 @@ function setActiveTab(tab) {
           // landing fine could mask us having collaterally wiped out
           // someone else's vote that raced against our save.
           const othersOk = otherVotersAtMutationTime.every(name => (s.votedMembers || []).includes(name));
-          return mineOk && othersOk;
+          const forwardOk = !pushedNextSlateId || Boolean(freshSlates.find(fs => fs.id === pushedNextSlateId && fs.forcedBozo));
+          return mineOk && othersOk && forwardOk;
         };
       });
     }
