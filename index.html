@@ -273,7 +273,7 @@
         </button>
       </form>
 
-      <p class="text-center text-xs text-slate-400 font-mono">Version: 3.13</p>
+      <p class="text-center text-xs text-slate-400 font-mono">Version: 3.14</p>
     </div>
   </div>
 
@@ -3821,7 +3821,15 @@ function setActiveTab(tab) {
       }
 
       editingLegId = legId;
-      document.getElementById('edit-leg-bettor-name').textContent = leg.bettor;
+      // Same anonymity rule as the legs table itself: only reveal a real
+      // name when anonymity has actually lifted for this slate, or when
+      // it's the viewer's own pick. An admin opening this dialog doesn't
+      // get a built-in peek at who's behind an anonymous pick just
+      // because they're an admin - that would undermine blind voting.
+      const legIndex = currentSlate.legs.findIndex(l => l.id === legId);
+      const isAnon = !isAnonymityLifted(currentSlate);
+      const dialogDisplayName = (!isAnon || leg.bettor === currentUser) ? leg.bettor : `Anonymous Bettor #${legIndex + 1}`;
+      document.getElementById('edit-leg-bettor-name').textContent = dialogDisplayName;
       document.getElementById('edit-leg-pick').value = leg.pick;
       document.getElementById('edit-leg-odds').value = Math.abs(leg.odds);
       setEditLegOddsSign(leg.odds < 0 ? '-' : '+');
