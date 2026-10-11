@@ -273,7 +273,7 @@
         </button>
       </form>
 
-      <p class="text-center text-xs text-slate-400 font-mono">Version: 3.12</p>
+      <p class="text-center text-xs text-slate-400 font-mono">Version: 3.13</p>
     </div>
   </div>
 
@@ -826,6 +826,44 @@
 
       <div class="pt-2 border-t border-slate-800">
         <button onclick="handleAddMember()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 font-medium py-2.5 rounded-lg text-sm transition">+ Add New Member</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="edit-leg-modal" onclick="if (event.target === this) closeEditLegModal();" class="fixed inset-0 z-[75] hidden flex items-center justify-center modal-backdrop p-4">
+    <div class="bg-slate-900 border border-amber-500/40 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-lg font-medium text-amber-400"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-pen"/></svg> Edit Pick</h3>
+          <p class="text-[11px] text-slate-400 mt-0.5">Admin edit — no PIN needed. Only while this pick is still Pending.</p>
+        </div>
+        <button onclick="closeEditLegModal()" class="text-slate-400 hover:text-white font-medium text-lg leading-none"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-xmark"/></svg></button>
+      </div>
+
+      <p class="text-xs text-slate-400">Editing <strong id="edit-leg-bettor-name" class="text-white">—</strong>'s pick</p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Pick Details</label>
+          <input type="text" id="edit-leg-pick" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-3 text-base text-slate-200 focus:outline-none focus:border-amber-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Odds</label>
+          <div class="flex items-stretch gap-2">
+            <div class="flex rounded-lg border border-slate-800 overflow-hidden shrink-0">
+              <button type="button" id="edit-leg-sign-minus-btn" onclick="setEditLegOddsSign('-')" class="px-4 text-lg font-medium transition">−</button>
+              <button type="button" id="edit-leg-sign-plus-btn" onclick="setEditLegOddsSign('+')" class="px-4 text-lg font-medium transition">+</button>
+            </div>
+            <input type="text" inputmode="numeric" id="edit-leg-odds" class="flex-1 min-w-0 bg-slate-950 border border-slate-800 rounded-lg px-3 py-3 text-base text-slate-200 focus:outline-none focus:border-amber-500">
+          </div>
+          <p id="edit-leg-odds-floor-text" class="text-[10px] text-slate-500 mt-1"></p>
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="closeEditLegModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 font-medium py-2.5 rounded-lg text-sm transition">Cancel</button>
+        <button onclick="saveEditedLeg()" class="flex-1 bg-amber-600 hover:bg-amber-500 text-slate-950 font-medium py-2.5 rounded-lg text-sm transition"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-floppy-disk"/></svg> Save Changes</button>
       </div>
     </div>
   </div>
@@ -3762,6 +3800,107 @@ function setActiveTab(tab) {
       });
     }
 
+    // Admin-only quick edit for a still-Pending pick - lets an admin fix a
+    // pick's text or odds (sportsbook line moved, typo, etc.) without
+    // needing that member's PIN to log in and edit it themselves. Only
+    // ever touches a Pending leg - once something's graded, correcting it
+    // goes through the normal status dropdown instead, so there's no
+    // ambiguity about silently rewriting a leg whose outcome already
+    // matters for standings/votes.
+    let editingLegId = null;
+    let editLegOddsSign = '-';
+
+    function openEditLegModal(legId) {
+      if (currentUserRole !== 'admin') return;
+      const currentSlate = slates.find(s => s.id === selectedSlateId);
+      const leg = currentSlate && currentSlate.legs.find(l => l.id === legId);
+      if (!leg) return;
+      if (leg.status !== 'Pending') {
+        showNotice("Only a still-Pending pick can be edited this way — once it's graded, use the status dropdown instead.");
+        return;
+      }
+
+      editingLegId = legId;
+      document.getElementById('edit-leg-bettor-name').textContent = leg.bettor;
+      document.getElementById('edit-leg-pick').value = leg.pick;
+      document.getElementById('edit-leg-odds').value = Math.abs(leg.odds);
+      setEditLegOddsSign(leg.odds < 0 ? '-' : '+');
+      const floorText = document.getElementById('edit-leg-odds-floor-text');
+      if (floorText) floorText.textContent = `Odds rule: nothing lower than ${oddsFloor}.`;
+
+      document.getElementById('edit-leg-modal').classList.remove('hidden');
+    }
+
+    function closeEditLegModal() {
+      editingLegId = null;
+      document.getElementById('edit-leg-modal').classList.add('hidden');
+    }
+
+    function setEditLegOddsSign(sign) {
+      editLegOddsSign = sign;
+      const minusBtn = document.getElementById('edit-leg-sign-minus-btn');
+      const plusBtn = document.getElementById('edit-leg-sign-plus-btn');
+      const activeClass = "px-4 text-lg font-medium transition bg-amber-600 text-slate-950";
+      const inactiveClass = "px-4 text-lg font-medium transition bg-slate-950 text-slate-400 hover:bg-slate-800";
+      if (minusBtn) minusBtn.className = sign === '-' ? activeClass : inactiveClass;
+      if (plusBtn) plusBtn.className = sign === '+' ? activeClass : inactiveClass;
+    }
+
+    async function saveEditedLeg() {
+      if (currentUserRole !== 'admin' || !editingLegId) return;
+
+      const pickVal = document.getElementById('edit-leg-pick').value.trim();
+      const rawMagnitudeInput = document.getElementById('edit-leg-odds').value.trim();
+
+      if (!pickVal) {
+        showNotice("Please enter pick details.");
+        return;
+      }
+      if (!/^\d+$/.test(rawMagnitudeInput)) {
+        showNotice("Odds must be a plain number, like 110 — use the +/- toggle to set the sign.");
+        return;
+      }
+
+      const magnitude = parseInt(rawMagnitudeInput, 10);
+      const oddsVal = editLegOddsSign === '-' ? -magnitude : magnitude;
+
+      if (oddsVal < oddsFloor) {
+        showNotice(`Illegal Pick! Rules state no picks can be made on odds lower than ${oddsFloor}.`);
+        return;
+      }
+
+      const targetLegId = editingLegId;
+
+      await optimisticMutate(() => {
+        const currentSlate = slates.find(s => s.id === selectedSlateId);
+        if (!currentSlate) return null;
+        const leg = currentSlate.legs.find(l => l.id === targetLegId);
+        if (!leg || leg.status !== 'Pending') {
+          showNotice("This pick can no longer be edited — it may have already been graded.");
+          return null;
+        }
+
+        // Same concurrent-edit protection used everywhere else a single
+        // leg gets changed - capture every OTHER leg id now, confirm none
+        // of them went missing by the time this save lands.
+        const otherLegIdsAtMutationTime = currentSlate.legs.filter(l => l.id !== leg.id).map(l => l.id);
+
+        leg.pick = pickVal;
+        leg.odds = oddsVal;
+
+        return (freshSlates) => {
+          const s = freshSlates.find(s => s.id === selectedSlateId);
+          if (!s) return false;
+          const l = s.legs.find(l => l.id === targetLegId);
+          const mineOk = Boolean(l && l.pick === pickVal && l.odds === oddsVal);
+          const othersOk = otherLegIdsAtMutationTime.every(otherId => s.legs.some(l => l.id === otherId));
+          return mineOk && othersOk;
+        };
+      });
+
+      closeEditLegModal();
+    }
+
     async function updateLegStatus(id, newStatus) {
       if (currentUserRole !== 'admin') {
         showNotice("Access Control: Only Admin users can update pick status.");
@@ -4330,7 +4469,10 @@ function setActiveTab(tab) {
               `}
             </td>
             <td class="p-3 text-center font-medium ${voteComplete ? 'text-rose-400' : 'text-slate-500'}">${votesDisplay !== null ? votesDisplay : '—'}</td>
-            <td class="p-3 text-right">
+            <td class="p-3 text-right whitespace-nowrap">
+              ${isAdmin && leg.status === 'Pending' ? `
+                <button onclick="openEditLegModal(${leg.id})" title="Edit pick (admin)" class="text-slate-500 hover:text-amber-400 transition text-xs px-2 py-1"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-pen"/></svg></button>
+              ` : ''}
               ${(isAdmin || leg.bettor === currentUser) ? `
                 <button onclick="deleteLeg(${leg.id})" class="text-slate-500 hover:text-rose-400 transition text-xs px-2 py-1">Delete</button>
               ` : '—'}
@@ -4362,6 +4504,9 @@ function setActiveTab(tab) {
               <span class="font-medium text-xs px-2 py-1 rounded bg-slate-900 border border-slate-800 ${statusColor}">Status: ${leg.status}</span>
             `}
             ${votesDisplay !== null ? `<span class="text-[11px] font-medium ${voteComplete ? 'text-rose-400' : 'text-slate-500'}">🤡 Bozo Votes: ${votesDisplay}</span>` : ''}
+            ${isAdmin && leg.status === 'Pending' ? `
+              <button onclick="openEditLegModal(${leg.id})" title="Edit pick (admin)" class="text-slate-500 hover:text-amber-400 transition text-xs px-2 py-1"><svg class="icon" viewBox="0 0 24 24"><use href="#icon-pen"/></svg></button>
+            ` : ''}
             ${(isAdmin || leg.bettor === currentUser) ? `
               <button onclick="deleteLeg(${leg.id})" class="text-slate-500 hover:text-rose-400 transition text-xs px-2 py-1">Delete</button>
             ` : ''}
